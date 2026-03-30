@@ -1,8 +1,12 @@
 [package]
-name    = "pg_json_patch"
-version = "0.1.0"
-edition = "2024"
-publish = false
+name        = "pg_json_patch"
+version     = "0.2.0"
+edition     = "2024"
+description = "A JSON Patch (RFC 6902) and JSON Merge Patch (RFC 7396) implementation for PostgreSQL."
+homepage    = "https://forgejo.920301.xyz/dan/pg_json_patch"
+repository  = "https://forgejo.920301.xyz/dan/pg_json_patch.git"
+license     = "MIT"
+publish     = false
 
 [lib]
 crate-type = ["cdylib", "lib"]
@@ -23,14 +27,14 @@ pg_test = ["dep:pretty_assertions"]
 
 [dependencies]
 json-patch        = "4"
-pgrx              = "=0.16.0"
-pretty_assertions = { version = "1.4.1", optional = true }
+pgrx              = "=0.17.0"
+pretty_assertions = { version = "1", optional = true }
 serde_json        = "1"
-thiserror         = "2.0.16"
+thiserror         = "2"
 
 [dev-dependencies]
-pgrx-tests        = "=0.16.0"
-pretty_assertions = "1.4.1"
+pgrx-tests        = "=0.17.0"
+pretty_assertions = "1"
 
 [profile.dev]
 panic = "unwind"

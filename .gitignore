@@ -9,3 +9,6 @@
 
 # cargo
 /target
+
+# pgrx
+/.pgrx
