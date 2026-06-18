@@ -96,7 +96,6 @@ mod tests {
     use std::error::Error;
 
     use pgrx::{JsonB, prelude::*};
-    use pretty_assertions::assert_eq;
 
     #[pg_test]
     fn diff() -> Result<(), Box<dyn Error>> {

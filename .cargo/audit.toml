@@ -1,5 +1,5 @@
 [advisories]
-ignore = ["RUSTSEC-2021-0127", "RUSTSEC-2024-0436"]
+ignore = ["RUSTSEC-2026-0178", "RUSTSEC-2026-0179", "RUSTSEC-2026-0180"]
 
 # Doesn't work in the sandbox
 [yanked]
