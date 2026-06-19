@@ -3,17 +3,17 @@ use thiserror::Error;
 
 ::pgrx::pg_module_magic!(name, version);
 
-#[pg_extern]
+#[pg_extern(immutable, parallel_safe)]
 fn json_diff(left: Json, right: Json) -> serde_json::Result<Json> {
     serde_json::to_value(json_patch::diff(&left.0, &right.0)).map(Json)
 }
 
-#[pg_extern]
+#[pg_extern(immutable, parallel_safe)]
 fn jsonb_diff(left: JsonB, right: JsonB) -> serde_json::Result<JsonB> {
     serde_json::to_value(json_patch::diff(&left.0, &right.0)).map(JsonB)
 }
 
-#[pg_extern]
+#[pg_extern(immutable, parallel_safe)]
 fn json_patch(mut doc: Json, patch: Json) -> Result<Json, JsonPatchError> {
     json_patch::patch(
         &mut doc.0,
@@ -22,7 +22,7 @@ fn json_patch(mut doc: Json, patch: Json) -> Result<Json, JsonPatchError> {
     Ok(doc)
 }
 
-#[pg_extern]
+#[pg_extern(immutable, parallel_safe)]
 fn jsonb_patch(mut doc: JsonB, patch: JsonB) -> Result<JsonB, JsonPatchError> {
     json_patch::patch(
         &mut doc.0,
@@ -31,13 +31,13 @@ fn jsonb_patch(mut doc: JsonB, patch: JsonB) -> Result<JsonB, JsonPatchError> {
     Ok(doc)
 }
 
-#[pg_extern]
+#[pg_extern(immutable, parallel_safe)]
 fn json_merge(mut doc: Json, patch: Json) -> Json {
     json_patch::merge(&mut doc.0, &patch.0);
     doc
 }
 
-#[pg_extern]
+#[pg_extern(immutable, parallel_safe)]
 fn jsonb_merge(mut doc: JsonB, patch: JsonB) -> JsonB {
     json_patch::merge(&mut doc.0, &patch.0);
     doc
@@ -47,7 +47,8 @@ extension_sql!(
     "CREATE AGGREGATE json_patch_agg(json) (
     SFUNC    = json_patch,
     STYPE    = json,
-    INITCOND = '{}'
+    INITCOND = '{}',
+    PARALLEL = SAFE
 );",
     name = "json_patch_agg",
     requires = [json_patch]
@@ -57,7 +58,8 @@ extension_sql!(
     "CREATE AGGREGATE jsonb_patch_agg(jsonb) (
     SFUNC    = jsonb_patch,
     STYPE    = jsonb,
-    INITCOND = '{}'
+    INITCOND = '{}',
+    PARALLEL = SAFE
 );",
     name = "jsonb_patch_agg",
     requires = [jsonb_patch]
@@ -67,7 +69,8 @@ extension_sql!(
     "CREATE AGGREGATE json_merge_agg(json) (
     SFUNC    = json_merge,
     STYPE    = json,
-    INITCOND = '{}'
+    INITCOND = '{}',
+    PARALLEL = SAFE
 );",
     name = "json_merge_agg",
     requires = [json_merge]
@@ -77,7 +80,8 @@ extension_sql!(
     "CREATE AGGREGATE jsonb_merge_agg(jsonb) (
     SFUNC    = jsonb_merge,
     STYPE    = jsonb,
-    INITCOND = '{}'
+    INITCOND = '{}',
+    PARALLEL = SAFE
 );",
     name = "jsonb_merge_agg",
     requires = [jsonb_merge]
