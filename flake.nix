@@ -3,30 +3,24 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
-    treefmt.url = "github:numtide/treefmt-nix";
-    treefmt.inputs.nixpkgs.follows = "nixpkgs";
-    git-hooks.url = "github:cachix/git-hooks.nix";
-    git-hooks.inputs.nixpkgs.follows = "nixpkgs";
-    rust.url = "github:juspay/rust-flake";
-    rust.inputs.nixpkgs.follows = "nixpkgs";
+    omniflake.url = "github:fzakaria/omniflake";
+    omniflake.inputs.nixpkgs.follows = "nixpkgs";
     advisory-db.url = "github:rustsec/advisory-db";
     advisory-db.flake = false;
   };
 
   outputs = inputs @ {
-    flake-parts,
+    omniflake,
     advisory-db,
     ...
   }:
-    flake-parts.lib.mkFlake {inherit inputs;} {
-      debug = true;
-      imports = with inputs; [
-        treefmt.flakeModule
-        git-hooks.flakeModule
-        rust.flakeModules.default
-        rust.flakeModules.nixpkgs
+    omniflake.flakes.flake-parts.lib.mkFlake {inherit inputs;} {
+      debug = false;
+      imports = with omniflake.flakes; [
+        treefmt-nix.flakeModule
+        git-hooks-nix.flakeModule
+        rust-flake.flakeModules.default
+        rust-flake.flakeModules.nixpkgs
       ];
       systems = inputs.nixpkgs.lib.systems.flakeExposed;
       perSystem = {
@@ -37,7 +31,7 @@
       }: let
         inherit (config.rust-project) crane-lib src;
 
-        postgresql = pkgs.postgresql_18;
+        postgresql = pkgs.postgresql_19;
         buildPgrxExtension = args:
           (pkgs.callPackage "${pkgs.path}/pkgs/development/tools/rust/cargo-pgrx/buildPgrxExtension.nix" {} args)
             .overrideAttrs (old: {
@@ -93,7 +87,7 @@
                   cargo-pgrx = pkgs.cargo-pgrx;
                   inherit pname;
                   version = config.rust-project.cargoToml.package.version;
-                  cargoHash = "sha256-50IYRKoaj/4UfiPeth+JuApf/iAgL62lXP7ggNtPzv4=";
+                  cargoHash = "sha256-VbEFXxRu7OxmJ1CMQSz93oMDepL0PpW3+dpTvalspaI=";
 
                   # pgrx tests try to install the extension into postgresql nix store
                   doCheck = false;
@@ -109,7 +103,7 @@
               drv.clippy = crane-lib.cargoClippy (craneArgs
                 // {
                   inherit cargoArtifacts;
-                  cargoClippyExtraArgs = "--all-targets --no-default-features --features pg18 -- --deny warnings";
+                  cargoClippyExtraArgs = "--all-targets --no-default-features --features pg19 -- --deny warnings";
                   meta = {
                     description = "Clippy check for the pg_json_patch crate";
                   };
@@ -122,16 +116,6 @@
           alejandra.enable = true;
           rustfmt.enable = true;
           taplo.enable = true;
-          taplo.settings.formatting.align_entries = true;
-          taplo.settings.formatting.column_width = 120;
-          taplo.settings.formatting.reorder_keys = false;
-          taplo.settings.rule = [
-            {
-              include = ["**/Cargo.toml" "Cargo.toml"];
-              keys = ["dependencies" "workspace.dependencies"];
-              formatting.reorder_keys = true;
-            }
-          ];
         };
 
         pre-commit.settings.package = pkgs.prek;
@@ -153,7 +137,7 @@
               exec ${crane-lib.clippy}/bin/cargo-clippy clippy \
                 --offline \
                 --no-default-features \
-                --features "pg18" \
+                --features "pg19" \
                 -- \
                 -D warnings
             '');
