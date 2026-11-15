@@ -1,6 +1,6 @@
 [package]
 name        = "pg_json_patch"
-version     = "0.4.0"
+version     = "0.5.0"
 edition     = "2024"
 description = "A JSON Patch (RFC 6902) and JSON Merge Patch (RFC 7396) implementation for PostgreSQL."
 homepage    = "https://forgejo.920301.xyz/dan/pg_json_patch"
@@ -12,8 +12,6 @@ crate-type = ["cdylib"]
 
 [features]
 default  = ["pg19"]
-pg13     = ["pgrx/pg13", "pgrx-tests/pg13"]
-pg14     = ["pgrx/pg14", "pgrx-tests/pg14"]
 pg15     = ["pgrx/pg15", "pgrx-tests/pg15"]
 pg16     = ["pgrx/pg16", "pgrx-tests/pg16"]
 pg17     = ["pgrx/pg17", "pgrx-tests/pg17"]
@@ -23,15 +21,15 @@ pg_test  = []
 pg_bench = ["dep:pgrx-bench"]
 
 [dependencies]
-json-patch  = "4"
-pgrx        = "=0.19.3"
-pgrx-bench  = { version = "=0.19.3", optional = true }
-pgrx-pg-sys = "=0.19.3"
+json-patch  = "5"
+pgrx        = "=0.20.0"
+pgrx-bench  = { version = "=0.20.0", optional = true }
+pgrx-pg-sys = "=0.20.0"
 serde_json  = "1"
 thiserror   = "2"
 
 [dev-dependencies]
-pgrx-tests = "=0.19.3"
+pgrx-tests = "=0.20.0"
 
 [profile.dev]
 panic = "unwind"

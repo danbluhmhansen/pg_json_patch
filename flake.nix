@@ -5,6 +5,10 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     omniflake.url = "github:fzakaria/omniflake";
     omniflake.inputs.nixpkgs.follows = "nixpkgs";
+    # A current rust-overlay: omniflake's pinned rust-flake ships an older one
+    # that only knows up to Rust 1.98. Substitute it via omniflake.lib.load.
+    rust-overlay.url = "github:oxalica/rust-overlay";
+    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     advisory-db.url = "github:rustsec/advisory-db";
     advisory-db.flake = false;
   };
@@ -13,7 +17,11 @@
     omniflake,
     advisory-db,
     ...
-  }:
+  }: let
+    # Load rust-flake from the index, overriding its rust-overlay input
+    # with the current one so rust-toolchain.toml can resolve to 1.99+.
+    rust-flake = omniflake.lib.load "rust-flake" {inherit (inputs) rust-overlay;};
+  in
     omniflake.flakes.flake-parts.lib.mkFlake {inherit inputs;} {
       debug = false;
       imports = with omniflake.flakes; [
@@ -32,6 +40,25 @@
         inherit (config.rust-project) crane-lib src;
 
         postgresql = pkgs.postgresql_19;
+
+        # cargo-pgrx is pinned to 0.19.3 in nixpkgs, but this extension
+        # targets pgrx 0.20.0, so build cargo-pgrx ourselves from crates.io.
+        cargoPgrxSrc = pkgs.fetchCrate {
+          pname = "cargo-pgrx";
+          version = "0.20.0";
+          hash = "sha256-/m7INFfPmDjcUozktErKJu9jw8m8vWctg0aSTEFufIY=";
+        };
+
+        cargo-pgrx = crane-lib.buildPackage {
+          src = cargoPgrxSrc;
+          pname = "cargo-pgrx";
+          version = "0.20.0";
+          cargoLock = "${cargoPgrxSrc}/Cargo.lock";
+          nativeBuildInputs = [pkgs.pkg-config];
+          buildInputs = [pkgs.openssl pkgs.zstd];
+          doCheck = false;
+        };
+
         buildPgrxExtension = args:
           (pkgs.callPackage "${pkgs.path}/pkgs/development/tools/rust/cargo-pgrx/buildPgrxExtension.nix" {} args)
             .overrideAttrs (old: {
@@ -83,14 +110,21 @@
             in {
               drv.crate = buildPgrxExtension (
                 finalAttrs: {
-                  inherit src postgresql;
-                  cargo-pgrx = pkgs.cargo-pgrx;
-                  inherit pname;
+                  inherit src postgresql pname cargo-pgrx;
                   version = config.rust-project.cargoToml.package.version;
-                  cargoHash = "sha256-VbEFXxRu7OxmJ1CMQSz93oMDepL0PpW3+dpTvalspaI=";
+                  cargoHash = "sha256-9uGn0KxdG+gD+NHr+DhvRLxU11fXPX6BL8swkLaMvD0=";
 
                   # pgrx tests try to install the extension into postgresql nix store
                   doCheck = false;
+
+                  env = {
+                    LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+                  };
+
+                  preBuild = ''
+                    export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
+                    export BINDGEN_EXTRA_CLANG_ARGS=""
+                  '';
 
                   meta = {
                     description = config.rust-project.crates.pg_json_patch.cargoToml.package.description;
@@ -142,7 +176,8 @@
                 -D warnings
             '');
           };
-          convco.enable = true;
+          # FIX: Enabling convco breaks at latest flake.lock
+          convco.enable = false;
           nil.enable = true;
           treefmt.enable = true;
           trufflehog.enable = true;
