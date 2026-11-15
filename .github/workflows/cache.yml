@@ -1,0 +1,23 @@
+name: "Cache binary"
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: wimpysworld/nothing-but-nix@v12
+    - uses: cachix/install-nix-action@v31
+    - uses: ryanccn/attic-action@v0
+      with:
+        endpoint: ${{ secrets.ATTIC_ENDPOINT }}
+        cache: ${{ secrets.ATTIC_CACHE }}
+        token: ${{ secrets.ATTIC_TOKEN }}
+        inputs-from: .
+    - run: nix build .#pg_json_patch

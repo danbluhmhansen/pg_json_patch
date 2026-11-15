@@ -119,11 +119,19 @@
 
                   env = {
                     LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+                    CLANG_PATH = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
+                    PGRX_BINDGEN_NO_DETECT_INCLUDES = "1";
                   };
 
                   preBuild = ''
                     export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
-                    export BINDGEN_EXTRA_CLANG_ARGS=""
+                    export CLANG_PATH="${pkgs.llvmPackages.clang-unwrapped}/bin/clang"
+                    export PGRX_BINDGEN_NO_DETECT_INCLUDES=1
+                    ${lib.optionalString pkgs.stdenv.isLinux ''
+                      export BINDGEN_EXTRA_CLANG_ARGS="$(cat ${pkgs.llvmPackages.clang}/nix-support/cc-cflags) $(cat ${pkgs.llvmPackages.clang}/nix-support/libc-cflags)"
+                    ''}
+                    ${lib.optionalString pkgs.stdenv.isDarwin
+                      "export BINDGEN_EXTRA_CLANG_ARGS=\"\""}
                   '';
 
                   meta = {
@@ -165,8 +173,10 @@
               export PGRX_HOME="$PWD/.pgrx"
               export PGRX_PG_CONFIG_PATH="${postgresql.pg_config}/bin/pg_config"
               export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
+              export CLANG_PATH="${pkgs.llvmPackages.clang-unwrapped}/bin/clang"
               ${lib.optionalString pkgs.stdenv.isLinux
                 "export BINDGEN_EXTRA_CLANG_ARGS=\"-isystem ${pkgs.glibc.dev}/include\""}
+              export PGRX_BINDGEN_NO_DETECT_INCLUDES=1
               mkdir -p "$PGRX_HOME"
               exec ${crane-lib.clippy}/bin/cargo-clippy clippy \
                 --offline \
@@ -187,8 +197,10 @@
           PSQL_PAGER = "${lib.getExe pkgs.pspg} --reprint-on-exit --blackwhite";
 
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+          CLANG_PATH = "${pkgs.llvmPackages.clang-unwrapped}/bin/clang";
           BINDGEN_EXTRA_CLANG_ARGS =
             lib.optionalString pkgs.stdenv.isLinux "-isystem ${pkgs.glibc.dev}/include";
+          PGRX_BINDGEN_NO_DETECT_INCLUDES = "1";
 
           inputsFrom = with config; [treefmt.build.devShell pre-commit.devShell devShells.rust];
 
